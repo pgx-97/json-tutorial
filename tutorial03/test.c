@@ -3,6 +3,11 @@
 #include <string.h>
 #include "leptjson.h"
 
+#ifdef _WINDOWS
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
+
 static int main_ret = 0;
 static int test_count = 0;
 static int test_pass = 0;
@@ -107,7 +112,7 @@ static void test_parse_number() {
 static void test_parse_string() {
     TEST_STRING("", "\"\"");
     TEST_STRING("Hello", "\"Hello\"");
-#if 0
+#if 1
     TEST_STRING("Hello\nWorld", "\"Hello\\nWorld\"");
     TEST_STRING("\" \\ / \b \f \n \r \t", "\"\\\" \\\\ \\/ \\b \\f \\n \\r \\t\"");
 #endif
@@ -163,7 +168,7 @@ static void test_parse_missing_quotation_mark() {
 }
 
 static void test_parse_invalid_string_escape() {
-#if 0
+#if 1
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\v\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\'\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_ESCAPE, "\"\\0\"");
@@ -172,7 +177,7 @@ static void test_parse_invalid_string_escape() {
 }
 
 static void test_parse_invalid_string_char() {
-#if 0
+#if 1
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x01\"");
     TEST_ERROR(LEPT_PARSE_INVALID_STRING_CHAR, "\"\x1F\"");
 #endif
@@ -188,12 +193,56 @@ static void test_access_null() {
 }
 
 static void test_access_boolean() {
-    /* \TODO */
     /* Use EXPECT_TRUE() and EXPECT_FALSE() */
+    lept_value v;
+    lept_init(&v);
+    lept_set_string(&v, "a", 1);
+    lept_set_boolean(&v, 1);
+    EXPECT_TRUE(lept_get_boolean(&v));
+    lept_set_boolean(&v, 0);
+    EXPECT_FALSE(lept_get_boolean(&v));
+    lept_free(&v);
+    lept_free(&v);
 }
 
+#define TEST_ACCESS_NUMBER(expect)\
+    do {\
+        lept_value v;\
+        lept_init(&v);\
+        lept_set_number(&v, expect);\
+        EXPECT_EQ_INT(LEPT_NUMBER, lept_get_type(&v));\
+        EXPECT_EQ_DOUBLE(expect, lept_get_number(&v));\
+        lept_free(&v);\
+    } while(0)
+
 static void test_access_number() {
-    /* \TODO */
+    TEST_ACCESS_NUMBER(0.0);
+    TEST_ACCESS_NUMBER(1.0);
+    TEST_ACCESS_NUMBER(-1.0);
+    TEST_ACCESS_NUMBER(1.5);
+    TEST_ACCESS_NUMBER(-1.5);
+    TEST_ACCESS_NUMBER(3.1416);
+    TEST_ACCESS_NUMBER(1E10);
+    TEST_ACCESS_NUMBER(1e10);
+    TEST_ACCESS_NUMBER(1E+10);
+    TEST_ACCESS_NUMBER(1E-10);
+    TEST_ACCESS_NUMBER(-1E10);
+    TEST_ACCESS_NUMBER(-1e10);
+    TEST_ACCESS_NUMBER(-1E+10);
+    TEST_ACCESS_NUMBER(-1E-10);
+    TEST_ACCESS_NUMBER(1.234E+10);
+    TEST_ACCESS_NUMBER(1.234E-10);
+    TEST_ACCESS_NUMBER(0.0); /* must underflow */
+
+    TEST_ACCESS_NUMBER(1.0000000000000002); /* the smallest number > 1 */
+    TEST_ACCESS_NUMBER(4.9406564584124654e-324); /* minimum denormal */
+    TEST_ACCESS_NUMBER(-4.9406564584124654e-324);
+    TEST_ACCESS_NUMBER(2.2250738585072009e-308);  /* Max subnormal double */
+    TEST_ACCESS_NUMBER(-2.2250738585072009e-308);
+    TEST_ACCESS_NUMBER(2.2250738585072014e-308);  /* Min normal positive double */
+    TEST_ACCESS_NUMBER(-2.2250738585072014e-308);
+    TEST_ACCESS_NUMBER(1.7976931348623157e+308);  /* Max double */
+    TEST_ACCESS_NUMBER(-1.7976931348623157e+308);
 }
 
 static void test_access_string() {
@@ -227,6 +276,10 @@ static void test_parse() {
 }
 
 int main() {
+#ifdef _WINDOWS
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+    // _CrtSetBreakAlloc(87);
     test_parse();
     printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
     return main_ret;

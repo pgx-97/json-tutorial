@@ -271,6 +271,7 @@ static void test_access() {
 int main() {
 #ifdef _WINDOWS
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    system("chcp 65001 & cls"); //cls 用来清除 chcp 的输出
 #endif
     test_parse();
     test_access();
